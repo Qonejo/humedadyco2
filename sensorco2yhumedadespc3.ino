@@ -28,12 +28,13 @@ SCD4x scd40;
 //========================================
 // ESP-NOW STRUCT
 //========================================
-typedef struct struct_message {
-  int humedad1;
-  int humedad2;
-} struct_message;
+typedef struct soil_message {
+  float soil1;
+  float soil2;
+  float co2;
+} soil_message;
 
-struct_message datos;
+soil_message datos;
 
 //========================================
 // Variables
@@ -231,8 +232,18 @@ void loop() {
 
     lastSend = millis();
 
-    datos.humedad1 = humedad1;
-    datos.humedad2 = humedad2;
+    datos.soil1 = humedad1;
+    datos.soil2 = humedad2;
+    datos.co2 = co2;
+
+    Serial.print("TX SOIL1: ");
+    Serial.println(datos.soil1);
+
+    Serial.print("TX SOIL2: ");
+    Serial.println(datos.soil2);
+
+    Serial.print("TX CO2: ");
+    Serial.println(datos.co2);
 
     esp_now_send(
       receiver1,
