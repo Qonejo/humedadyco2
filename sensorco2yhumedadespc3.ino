@@ -38,12 +38,17 @@ typedef struct soil_message {
 
 soil_message datos;
 
+typedef struct struct_message {
+  bool inLightMode;
+} struct_message;
+
 //========================================
 // Variables
 //========================================
 int humedad1 = 0;
 int humedad2 = 0;
 int co2 = 400;
+bool remoteLightMode = true;
 
 //========================================
 // Timers
@@ -51,6 +56,13 @@ int co2 = 400;
 unsigned long lastSoil = 0;
 unsigned long lastDisplay = 0;
 unsigned long lastSend = 0;
+
+const unsigned long SOIL_INTERVAL_LIGHT_MS = 5000;
+const unsigned long SOIL_INTERVAL_DARK_MS = 20000;
+const unsigned long DISPLAY_INTERVAL_LIGHT_MS = 3000;
+const unsigned long DISPLAY_INTERVAL_DARK_MS = 10000;
+const unsigned long SEND_INTERVAL_LIGHT_MS = 20000;
+const unsigned long SEND_INTERVAL_DARK_MS = 60000;
 
 //========================================
 // MACs receptores
@@ -71,6 +83,28 @@ void OnDataSent(const wifi_tx_info_t *info, esp_now_send_status_t status) {
   } else {
     Serial.println("ESP-NOW ERROR");
   }
+}
+
+void OnDataRecv(
+  const esp_now_recv_info_t *info,
+  const uint8_t *incomingData,
+  int len
+) {
+  if (len != sizeof(struct_message)) {
+    return;
+  }
+
+  if (memcmp(info->src_addr, receiver1, 6) != 0) {
+    return;
+  }
+
+  struct_message incoming;
+  memcpy(&incoming, incomingData, sizeof(incoming));
+
+  remoteLightMode = incoming.inLightMode;
+
+  Serial.print("LIGHT MODE: ");
+  Serial.println(remoteLightMode);
 }
 
 void setup() {
@@ -173,6 +207,7 @@ void setup() {
   }
 
   esp_now_register_send_cb(OnDataSent);
+  esp_now_register_recv_cb(OnDataRecv);
 
   //====================================
   // Peer 1
@@ -212,10 +247,14 @@ void loop() {
     }
   }
 
+  unsigned long soilInterval = remoteLightMode ? SOIL_INTERVAL_LIGHT_MS : SOIL_INTERVAL_DARK_MS;
+  unsigned long displayInterval = remoteLightMode ? DISPLAY_INTERVAL_LIGHT_MS : DISPLAY_INTERVAL_DARK_MS;
+  unsigned long sendInterval = remoteLightMode ? SEND_INTERVAL_LIGHT_MS : SEND_INTERVAL_DARK_MS;
+
   //====================================
   // HUMEDAD MUY LENTA
   //====================================
-  if (millis() - lastSoil > 5000) {
+  if (millis() - lastSoil > soilInterval) {
 
     lastSoil = millis();
 
@@ -234,7 +273,7 @@ void loop() {
   //====================================
   // ESP-NOW MUY LENTO
   //====================================
-  if (millis() - lastSend > 20000) {
+  if (millis() - lastSend > sendInterval) {
 
     lastSend = millis();
 
@@ -270,10 +309,15 @@ void loop() {
   //====================================
   // OLED
   //====================================
-  if (millis() - lastDisplay > 3000) {
+  if (millis() - lastDisplay > displayInterval) {
 
     lastDisplay = millis();
-    u8g2.setPowerSave(0);
+
+    if (!remoteLightMode) {
+      u8g2.setPowerSave(1);
+      didUpdateDisplay = true;
+    } else {
+      u8g2.setPowerSave(0);
 
     u8g2.clearBuffer();
 
@@ -293,7 +337,8 @@ void loop() {
 
     u8g2.sendBuffer();
     u8g2.setPowerSave(1);
-    didUpdateDisplay = true;
+      didUpdateDisplay = true;
+    }
   }
 
   //====================================
