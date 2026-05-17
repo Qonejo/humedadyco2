@@ -3,6 +3,7 @@
 #include <WiFi.h>
 #include <esp_now.h>
 #include <esp_wifi.h>
+#include <esp_sleep.h>
 #include <SparkFun_SCD4x_Arduino_Library.h>
 
 //========================================
@@ -75,6 +76,7 @@ void OnDataSent(const wifi_tx_info_t *info, esp_now_send_status_t status) {
 void setup() {
 
   Serial.begin(115200);
+  setCpuFrequencyMhz(80);
 
   //====================================
   // I2C
@@ -119,7 +121,7 @@ void setup() {
   //====================================
   delay(1000);
 
-  scd40.startPeriodicMeasurement();
+  scd40.startLowPowerPeriodicMeasurement();
 
   Serial.println("Esperando primera medicion...");
 
@@ -152,6 +154,7 @@ void setup() {
   // DESPUES iniciar WiFi y ESP-NOW
   //====================================
   WiFi.mode(WIFI_STA);
+  WiFi.setSleep(true);
 
   esp_wifi_set_promiscuous(true);
 
@@ -191,6 +194,8 @@ void setup() {
 }
 
 void loop() {
+  bool didSendEspNow = false;
+  bool didUpdateDisplay = false;
 
   //====================================
   // PRIORIDAD ABSOLUTA AL CO2
@@ -203,8 +208,7 @@ void loop() {
 
       co2 = newCO2;
 
-      Serial.print("CO2: ");
-      Serial.println(co2);
+      // Sin spam serial constante: CO2 se reporta al enviar ESP-NOW.
     }
   }
 
@@ -224,12 +228,7 @@ void loop() {
     humedad1 = constrain(humedad1, 0, 100);
     humedad2 = constrain(humedad2, 0, 100);
 
-    Serial.print("S1: ");
-    Serial.print(humedad1);
-
-    Serial.print("% S2: ");
-    Serial.print(humedad2);
-    Serial.println("%");
+    // Sin spam serial constante: humedad se reporta al enviar ESP-NOW.
   }
 
   //====================================
@@ -265,14 +264,16 @@ void loop() {
     );
 
     Serial.println("ESP-NOW ENVIADO");
+    didSendEspNow = true;
   }
 
   //====================================
   // OLED
   //====================================
-  if (millis() - lastDisplay > 1000) {
+  if (millis() - lastDisplay > 3000) {
 
     lastDisplay = millis();
+    u8g2.setPowerSave(0);
 
     u8g2.clearBuffer();
 
@@ -291,10 +292,17 @@ void loop() {
     u8g2.drawStr(0, 40, line3);
 
     u8g2.sendBuffer();
+    u8g2.setPowerSave(1);
+    didUpdateDisplay = true;
   }
 
   //====================================
-  // PEQUEÑA PAUSA
+  // LIGHT SLEEP ENTRE CICLOS
   //====================================
-  delay(10);
+  if (didSendEspNow || didUpdateDisplay) {
+    esp_sleep_enable_timer_wakeup(500000);
+    esp_light_sleep_start();
+  } else {
+    delay(10);
+  }
 }
