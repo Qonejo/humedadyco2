@@ -2,6 +2,7 @@
 #include <U8g2lib.h>
 #include <WiFi.h>
 #include <esp_now.h>
+#include <esp_wifi.h>
 #include <SparkFun_SCD4x_Arduino_Library.h>
 
 //========================================
@@ -152,6 +153,12 @@ void setup() {
   //====================================
   WiFi.mode(WIFI_STA);
 
+  esp_wifi_set_promiscuous(true);
+
+  esp_wifi_set_channel(1, WIFI_SECOND_CHAN_NONE);
+
+  esp_wifi_set_promiscuous(false);
+
   Serial.print("MAC: ");
   Serial.println(WiFi.macAddress());
 
@@ -168,7 +175,7 @@ void setup() {
   // Peer 1
   //====================================
   memcpy(peerInfo.peer_addr, receiver1, 6);
-  peerInfo.channel = 0;
+  peerInfo.channel = 1;
   peerInfo.encrypt = false;
 
   esp_now_add_peer(&peerInfo);
