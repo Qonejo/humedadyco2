@@ -108,7 +108,7 @@ void OnDataRecv(
 void setup() {
 
   Serial.begin(115200);
-  setCpuFrequencyMhz(40);
+  setCpuFrequencyMhz(80);
 
   //====================================
   // I2C
@@ -137,7 +137,7 @@ void setup() {
   //====================================
   Serial.println("Iniciando SCD40...");
 
-  delay(500);
+  delay(3000);
 
   if (!scd40.begin()) {
 
@@ -147,7 +147,12 @@ void setup() {
     u8g2.drawStr(0, 20, "ERROR SCD40");
     u8g2.sendBuffer();
 
-    ESP.restart();
+    while (1) {
+
+      Serial.println("SCD40 FAIL");
+
+      delay(1000);
+    }
   }
 
   Serial.println("SCD40 OK");
