@@ -188,7 +188,7 @@ void setup() {
   // DESPUES iniciar WiFi y ESP-NOW
   //====================================
   WiFi.mode(WIFI_STA);
-  WiFi.setSleep(true);
+  // WiFi.setSleep(true);
 
   esp_wifi_set_promiscuous(true);
 
@@ -229,9 +229,6 @@ void setup() {
 }
 
 void loop() {
-  bool didSendEspNow = false;
-  bool didUpdateDisplay = false;
-
   //====================================
   // PRIORIDAD ABSOLUTA AL CO2
   //====================================
@@ -303,7 +300,6 @@ void loop() {
     );
 
     Serial.println("ESP-NOW ENVIADO");
-    didSendEspNow = true;
   }
 
   //====================================
@@ -315,7 +311,6 @@ void loop() {
 
     if (!remoteLightMode) {
       u8g2.setPowerSave(1);
-      didUpdateDisplay = true;
     } else {
       u8g2.setPowerSave(0);
 
@@ -337,17 +332,8 @@ void loop() {
 
     u8g2.sendBuffer();
     u8g2.setPowerSave(1);
-      didUpdateDisplay = true;
     }
   }
 
-  //====================================
-  // LIGHT SLEEP ENTRE CICLOS
-  //====================================
-  if (didSendEspNow || didUpdateDisplay) {
-    esp_sleep_enable_timer_wakeup(500000);
-    esp_light_sleep_start();
-  } else {
-    delay(10);
-  }
+  delay(10);
 }
