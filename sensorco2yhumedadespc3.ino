@@ -2,7 +2,6 @@
 #include <U8g2lib.h>
 #include <WiFi.h>
 #include <esp_now.h>
-#include <esp_wifi.h>
 #include <esp_sleep.h>
 #include <SparkFun_SCD4x_Arduino_Library.h>
 
@@ -109,12 +108,14 @@ void OnDataRecv(
 void setup() {
 
   Serial.begin(115200);
-  setCpuFrequencyMhz(80);
+  setCpuFrequencyMhz(40);
 
   //====================================
   // I2C
   //====================================
   Wire.begin(5, 6);
+  Wire.setClock(100000);
+  delay(50);
 
   //====================================
   // OLED
@@ -136,6 +137,8 @@ void setup() {
   //====================================
   Serial.println("Iniciando SCD40...");
 
+  delay(500);
+
   if (!scd40.begin()) {
 
     Serial.println("ERROR SCD40");
@@ -144,7 +147,7 @@ void setup() {
     u8g2.drawStr(0, 20, "ERROR SCD40");
     u8g2.sendBuffer();
 
-    while (1);
+    ESP.restart();
   }
 
   Serial.println("SCD40 OK");
@@ -187,14 +190,6 @@ void setup() {
   // DESPUES iniciar WiFi y ESP-NOW
   //====================================
   WiFi.mode(WIFI_STA);
-  WiFi.disconnect();
-  // WiFi.setSleep(true);
-
-  esp_wifi_set_promiscuous(true);
-
-  esp_wifi_set_channel(1, WIFI_SECOND_CHAN_NONE);
-
-  esp_wifi_set_promiscuous(false);
 
   Serial.print("MAC: ");
   Serial.println(WiFi.macAddress());
@@ -203,7 +198,7 @@ void setup() {
 
     Serial.println("ESP-NOW ERROR");
 
-    while (1);
+    ESP.restart();
   }
 
   esp_now_register_send_cb(OnDataSent);
@@ -216,7 +211,7 @@ void setup() {
 
   memcpy(peer1.peer_addr, receiver1, 6);
 
-  peer1.channel = 1;
+  peer1.channel = 0;
 
   peer1.encrypt = false;
 
@@ -236,7 +231,7 @@ void setup() {
 
   memcpy(peer2.peer_addr, receiver2, 6);
 
-  peer2.channel = 1;
+  peer2.channel = 0;
 
   peer2.encrypt = false;
 
