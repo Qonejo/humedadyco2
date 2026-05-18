@@ -71,7 +71,6 @@ uint8_t receiver1[] = {0x00, 0x4B, 0x12, 0x3D, 0x19, 0xFC};
 
 uint8_t receiver2[] = {0x94, 0xA9, 0x90, 0x37, 0x7A, 0xEC};
 
-esp_now_peer_info_t peerInfo;
 
 //========================================
 // Callback ESP-NOW
@@ -188,6 +187,7 @@ void setup() {
   // DESPUES iniciar WiFi y ESP-NOW
   //====================================
   WiFi.mode(WIFI_STA);
+  WiFi.disconnect();
   // WiFi.setSleep(true);
 
   esp_wifi_set_promiscuous(true);
@@ -212,18 +212,42 @@ void setup() {
   //====================================
   // Peer 1
   //====================================
-  memcpy(peerInfo.peer_addr, receiver1, 6);
-  peerInfo.channel = 1;
-  peerInfo.encrypt = false;
+  esp_now_peer_info_t peer1 = {};
 
-  esp_now_add_peer(&peerInfo);
+  memcpy(peer1.peer_addr, receiver1, 6);
+
+  peer1.channel = 1;
+
+  peer1.encrypt = false;
+
+  if (esp_now_add_peer(&peer1) == ESP_OK) {
+
+    Serial.println("Peer1 OK");
+
+  } else {
+
+    Serial.println("Peer1 ERROR");
+  }
 
   //====================================
   // Peer 2
   //====================================
-  memcpy(peerInfo.peer_addr, receiver2, 6);
+  esp_now_peer_info_t peer2 = {};
 
-  esp_now_add_peer(&peerInfo);
+  memcpy(peer2.peer_addr, receiver2, 6);
+
+  peer2.channel = 1;
+
+  peer2.encrypt = false;
+
+  if (esp_now_add_peer(&peer2) == ESP_OK) {
+
+    Serial.println("Peer2 OK");
+
+  } else {
+
+    Serial.println("Peer2 ERROR");
+  }
 
   Serial.println("ESP-NOW OK");
 }
