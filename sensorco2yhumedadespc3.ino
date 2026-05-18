@@ -118,16 +118,6 @@ void setup() {
   delay(50);
 
   //====================================
-  // OLED
-  //====================================
-  u8g2.begin();
-
-  u8g2.clearBuffer();
-  u8g2.setFont(u8g2_font_5x7_tr);
-  u8g2.drawStr(0, 20, "Iniciando...");
-  u8g2.sendBuffer();
-
-  //====================================
   // ADC
   //====================================
   analogReadResolution(12);
@@ -142,10 +132,6 @@ void setup() {
   if (!scd40.begin()) {
 
     Serial.println("ERROR SCD40");
-
-    u8g2.clearBuffer();
-    u8g2.drawStr(0, 20, "ERROR SCD40");
-    u8g2.sendBuffer();
 
     while (1) {
 
@@ -162,7 +148,26 @@ void setup() {
   //====================================
   delay(1000);
 
-  scd40.startLowPowerPeriodicMeasurement();
+  scd40.startPeriodicMeasurement();
+
+  //====================================
+  // OLED (despues de SCD40)
+  //====================================
+  u8g2.begin();
+
+  u8g2.clearBuffer();
+
+  u8g2.setFont(
+    u8g2_font_5x7_tr
+  );
+
+  u8g2.drawStr(
+    0,
+    20,
+    "Iniciando..."
+  );
+
+  u8g2.sendBuffer();
 
   Serial.println("Esperando primera medicion...");
 
@@ -333,29 +338,25 @@ void loop() {
 
     lastDisplay = millis();
 
-    if (!remoteLightMode) {
-      u8g2.setPowerSave(1);
-    } else {
-      u8g2.setPowerSave(0);
+    if (remoteLightMode) {
 
-    u8g2.clearBuffer();
+      u8g2.clearBuffer();
 
-    u8g2.setFont(u8g2_font_6x12_tr);
+      u8g2.setFont(u8g2_font_6x12_tr);
 
-    char line1[20];
-    char line2[20];
-    char line3[20];
+      char line1[20];
+      char line2[20];
+      char line3[20];
 
-    sprintf(line1, "CO2:%d", co2);
-    sprintf(line2, "S1 :%d%%", humedad1);
-    sprintf(line3, "S2 :%d%%", humedad2);
+      sprintf(line1, "CO2:%d", co2);
+      sprintf(line2, "S1 :%d%%", humedad1);
+      sprintf(line3, "S2 :%d%%", humedad2);
 
-    u8g2.drawStr(0, 12, line1);
-    u8g2.drawStr(0, 26, line2);
-    u8g2.drawStr(0, 40, line3);
+      u8g2.drawStr(0, 12, line1);
+      u8g2.drawStr(0, 26, line2);
+      u8g2.drawStr(0, 40, line3);
 
-    u8g2.sendBuffer();
-    u8g2.setPowerSave(1);
+      u8g2.sendBuffer();
     }
   }
 
